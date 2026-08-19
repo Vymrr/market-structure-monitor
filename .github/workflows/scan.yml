@@ -1,0 +1,33 @@
+name: Market structure scan
+
+on:
+  schedule:
+    # Every 15 minutes, 13:30-21:00 UTC (~9:30-17:00 ET, DST-aware enough for a free cron)
+    - cron: "*/15 13-20 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore scan state
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: msm-state-v1
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Scan
+        env:
+          MSM_NTFY_TOPIC: ${{ secrets.MSM_NTFY_TOPIC }}
+          MSM_NTFY_SERVER: ${{ secrets.MSM_NTFY_SERVER }}
+          MSM_TELEGRAM_BOT_TOKEN: ${{ secrets.MSM_TELEGRAM_BOT_TOKEN }}
+          MSM_TELEGRAM_CHAT_ID: ${{ secrets.MSM_TELEGRAM_CHAT_ID }}
+          MSM_DISCORD_WEBHOOK: ${{ secrets.MSM_DISCORD_WEBHOOK }}
+          MSM_MIN_SEVERITY: ${{ secrets.MSM_MIN_SEVERITY }}
+        run: python -m msm scan

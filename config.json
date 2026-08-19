@@ -1,0 +1,22 @@
+{
+  "port": 8765,
+  "bind": "0.0.0.0",
+  "scan_seconds_rth": 180,
+  "scan_seconds_off": 1800,
+  "indices": ["SPY", "QQQ", "IWM", "DIA"],
+  "sectors": ["XLK", "XLF", "XLE", "XLV", "XLY", "XLP", "XLI", "XLU", "XLB", "XLRE", "XLC"],
+  "cross_asset": ["RSP", "TLT", "HYG", "LQD", "GLD", "UUP"],
+  "vol": ["^VIX", "^VIX3M"],
+  "rates": ["^TNX"],
+  "swing_left": 5,
+  "swing_right": 5,
+  "alerts": {
+    "windows_toast": true,
+    "ntfy": true,
+    "ntfy_server": "https://ntfy.sh",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "discord_webhook": "",
+    "min_severity": "medium"
+  }
+}

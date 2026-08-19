@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Market Structure Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%230b0f14' width='32' height='32'/><path fill='%233dd68c' d='M4 24 L12 14 L18 18 L28 6 L28 24 Z'/></svg>" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <h1>Market Structure</h1>
+        <p class="sub">US equities · regime, breadth, vol, swings</p>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span id="session-pill" class="pill">—</span>
+      <span id="clock" class="mono">—</span>
+      <button id="scan-btn" type="button">Scan now</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <article class="score-card">
+        <p class="k">Structure score</p>
+        <div class="score-row">
+          <span id="score-value" class="score">—</span>
+          <span id="score-label" class="pill">—</span>
+        </div>
+        <div class="bar"><div id="score-bar"></div></div>
+        <p id="updated" class="muted">Waiting for first snapshot…</p>
+      </article>
+      <article>
+        <p class="k">Volatility</p>
+        <p id="vix-line" class="big mono">VIX —</p>
+        <p id="vix-sub" class="muted">term structure —</p>
+      </article>
+      <article>
+        <p class="k">Breadth</p>
+        <p id="breadth-line" class="big mono">— / 11</p>
+        <p id="breadth-sub" class="muted">sectors above 50 DMA</p>
+      </article>
+      <article>
+        <p class="k">Phone + desktop push</p>
+        <p id="ntfy-topic" class="mono topic">—</p>
+        <p class="muted">Install <a href="https://ntfy.sh/" target="_blank" rel="noopener">ntfy</a> and subscribe to that topic. Free, no account required.</p>
+        <p><button id="test-btn" type="button">Send test push</button></p>
+      </article>
+    </section>
+
+    <h2>Indices</h2>
+    <section id="indices" class="grid-4"></section>
+
+    <div class="split">
+      <div>
+        <h2>Opening range <span class="muted">15-minute, RTH</span></h2>
+        <section id="opening" class="stack"></section>
+        <h2>Cross-asset</h2>
+        <section id="cross" class="grid-3"></section>
+      </div>
+      <div>
+        <h2>Sector participation</h2>
+        <section id="sectors" class="sectors"></section>
+        <h2>Relative 20-day</h2>
+        <section id="relative" class="stack"></section>
+      </div>
+    </div>
+
+    <h2>Structure changes</h2>
+    <section id="alerts" class="alerts"></section>
+  </main>
+
+  <footer>
+    Data via Yahoo Finance. Not trading advice. Structure is computed from daily swings, moving averages, VIX term structure, and sector breadth.
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>
