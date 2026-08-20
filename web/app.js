@@ -55,7 +55,7 @@ function render(s) {
   $("clock").textContent = s.ts_label || "—";
   $("session-pill").className = "pill " + (s.rth ? "live" : "closed");
   $("session-pill").textContent = s.rth ? "RTH live" : "session closed";
-  $("updated").textContent = s.ts ? `Updated ${s.ts_label}` : "";
+  $("updated").textContent = snapshotAge(s);
 
   const score = (s.score || {}).value;
   const label = (s.score || {}).label || "—";
@@ -74,7 +74,9 @@ function render(s) {
   $("breadth-sub").textContent = `${(inn.breadth_bucket || "").replace("_", " ")} · sectors above 50 DMA`;
 
   const hosted = !!s.hosted;
-  $("scan-btn").hidden = hosted;
+  $("scan-btn").hidden = false;
+  $("scan-btn").textContent = hosted ? "Refresh" : "Scan now";
+  $("github-btn").hidden = !hosted;
   $("test-btn").hidden = hosted;
   $("notify-btn").hidden = !hosted;
   if (hosted) syncNotifyButton();
@@ -82,7 +84,7 @@ function render(s) {
   if (hosted) {
     $("ntfy-topic").textContent = "ntfy alerts on (topic not published)";
     $("tailscale-line").textContent = "Cloud dashboard · GitHub Pages · PC can be off";
-    $("updated").textContent = (s.ts ? `Updated ${s.ts_label}` : "") + " · refresh ~15 min in RTH";
+    $("updated").textContent = snapshotAge(s) + " · not live ticks · GitHub ~15 min";
   } else {
     const server = (s.ntfy_server || "https://ntfy.sh").replace(/\/$/, "");
     const topic = s.ntfy_topic || "—";
@@ -193,13 +195,23 @@ function syncNotifyButton() {
   else btn.textContent = "Enable desktop alerts";
 }
 
+function snapshotAge(s) {
+  if (!s || !s.ts) return "Waiting for first snapshot…";
+  const then = Date.parse(s.ts);
+  if (Number.isNaN(then)) return `Updated ${s.ts_label || ""}`.trim();
+  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+  const ago = mins < 1 ? "just now" : mins === 1 ? "1 min ago" : `${mins} min ago`;
+  return `Snapshot ${s.ts_label} · ${ago}`;
+}
+
 async function load() {
   const errors = [];
-  for (const url of ["/api/snapshot", "snapshot.json"]) {
+  const bust = `t=${Date.now()}`;
+  for (const url of ["/api/snapshot", `snapshot.json?${bust}`]) {
     try {
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`${url} ${res.status}`);
-      usingLocalApi = url === "/api/snapshot";
+      usingLocalApi = url.startsWith("/api/snapshot");
       render(await res.json());
       return;
     } catch (err) {
@@ -245,15 +257,26 @@ $("test-btn").addEventListener("click", async () => {
   }
 });
 
+$("github-btn").addEventListener("click", () => {
+  window.open(
+    "https://github.com/Vymrr/market-structure-monitor/actions/workflows/scan.yml",
+    "_blank",
+    "noopener",
+  );
+});
+
 $("scan-btn").addEventListener("click", async () => {
+  const hosted = $("github-btn") && !$("github-btn").hidden;
   $("scan-btn").disabled = true;
-  $("scan-btn").textContent = "Scanning…";
+  $("scan-btn").textContent = hosted ? "Refreshing…" : "Scanning…";
   try {
-    await fetch("/api/scan", { method: "POST" });
+    if (!hosted) {
+      await fetch("/api/scan", { method: "POST" });
+    }
     await load();
   } finally {
     $("scan-btn").disabled = false;
-    $("scan-btn").textContent = "Scan now";
+    $("scan-btn").textContent = hosted ? "Refresh" : "Scan now";
   }
 });
 
