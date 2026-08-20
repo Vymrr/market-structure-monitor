@@ -102,23 +102,17 @@ def _windows_toast(title: str, body: str) -> None:
         '<audio silent="true"/>'
         "</toast>"
     )
-    script = f"""
+    script = """
 $ErrorActionPreference = 'Stop'
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] | Out-Null
 $doc = New-Object Windows.Data.Xml.Dom.XmlDocument
 $doc.LoadXml(@'
-{xml}
+__TOAST_XML__
 '@)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
-foreach ($appId in @('Market Structure Monitor', '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe')) {{
-  try {{
-    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
-    exit 0
-  }} catch {{}}
-}}
-exit 1
-"""
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Market Structure Monitor').Show($toast)
+""".replace("__TOAST_XML__", xml)
     try:
         subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
