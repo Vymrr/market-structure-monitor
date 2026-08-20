@@ -74,6 +74,16 @@ function render(s) {
   const server = (s.ntfy_server || "https://ntfy.sh").replace(/\/$/, "");
   const topic = s.ntfy_topic || "—";
   $("ntfy-topic").innerHTML = `<a href="${server}/${topic}" target="_blank" rel="noopener">${topic}</a>`;
+  const acc = s.access || {};
+  if (acc.tailscale) {
+    $("tailscale-line").innerHTML = `<a href="${acc.tailscale}">${acc.tailscale}</a>`;
+  } else if (acc.tailscale_installed && acc.tailscale_state && acc.tailscale_state !== "running") {
+    $("tailscale-line").textContent = `Tailscale: ${acc.tailscale_state} — log in on this PC`;
+  } else if (acc.tailscale_installed) {
+    $("tailscale-line").textContent = "Tailscale: installed, waiting for login";
+  } else {
+    $("tailscale-line").textContent = "Tailscale: not installed on this PC";
+  }
 
   $("indices").innerHTML = (s.indices || []).map(indexCard).join("") || "<p class='muted'>No index data.</p>";
 

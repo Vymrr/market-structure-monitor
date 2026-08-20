@@ -1,16 +1,24 @@
 from __future__ import annotations
 
 import json
+import shutil
 import socket
+import subprocess
 import threading
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import urlparse
 
 from .alerts import notify_all
 from .config import WEB_DIR, load_config
 from .scanner import current_view, run_scan
 from .structure import Alert, is_rth, now_et
+
+TAILSCALE_EXE_CANDIDATES = (
+    Path(r"C:\Program Files\Tailscale\tailscale.exe"),
+    Path(r"C:\Program Files (x86)\Tailscale\tailscale.exe"),
+)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -24,10 +32,17 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path == "/api/snapshot":
-            self._json(current_view(self.cfg))
+            self._json(attach_access(current_view(self.cfg), self.cfg))
             return
         if path == "/api/health":
-            self._json({"ok": True, "rth": is_rth(), "ts": now_et().isoformat(timespec="seconds")})
+            self._json(
+                {
+                    "ok": True,
+                    "rth": is_rth(),
+                    "ts": now_et().isoformat(timespec="seconds"),
+                    "access": access_urls(self.cfg),
+                }
+            )
             return
         if path == "/":
             self.path = "/index.html"
@@ -77,6 +92,67 @@ def lan_ip() -> str:
         return "127.0.0.1"
 
 
+def tailscale_exe() -> str | None:
+    found = shutil.which("tailscale")
+    if found:
+        return found
+    for path in TAILSCALE_EXE_CANDIDATES:
+        if path.exists():
+            return str(path)
+    return None
+
+
+def tailscale_status() -> dict:
+    exe = tailscale_exe()
+    if not exe:
+        return {"installed": False, "state": "not_installed", "ip": None, "dns": None}
+    try:
+        raw = subprocess.check_output(
+            [exe, "status", "--json"],
+            timeout=8,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+        data = json.loads(raw)
+    except Exception:
+        return {"installed": True, "state": "offline", "ip": None, "dns": None}
+
+    backend = str(data.get("BackendState") or "unknown")
+    self_info = data.get("Self") or {}
+    ips = self_info.get("TailscaleIPs") or data.get("TailscaleIPs") or []
+    ip4 = next((i for i in ips if ":" not in i), None)
+    dns = (self_info.get("DNSName") or "").rstrip(".")
+    return {
+        "installed": True,
+        "state": backend.lower(),
+        "ip": ip4,
+        "dns": dns or None,
+        "online": backend == "Running" and bool(ip4),
+    }
+
+
+def access_urls(cfg: dict | None = None) -> dict:
+    cfg = cfg or load_config()
+    port = int(cfg.get("port") or 8765)
+    ts = tailscale_status()
+    out = {
+        "local": f"http://127.0.0.1:{port}",
+        "lan": f"http://{lan_ip()}:{port}",
+        "tailscale": f"http://{ts['ip']}:{port}" if ts.get("ip") else None,
+        "tailscale_dns": f"http://{ts['dns']}:{port}" if ts.get("dns") else None,
+        "tailscale_state": ts.get("state"),
+        "tailscale_installed": bool(ts.get("installed")),
+        "tailscale_online": bool(ts.get("online")),
+    }
+    return out
+
+
+def attach_access(snap: dict, cfg: dict | None = None) -> dict:
+    view = dict(snap)
+    view["access"] = access_urls(cfg)
+    return view
+
+
 def _loop(cfg: dict, stop: threading.Event) -> None:
     while not stop.is_set():
         try:
@@ -105,15 +181,22 @@ def serve(host: str | None = None, port: int | None = None) -> None:
     worker.start()
 
     httpd = ThreadingHTTPServer((host, port), partial(Handler, cfg=cfg))
-    ip = lan_ip()
+    access = access_urls(cfg)
     topic = (cfg.get("alerts") or {}).get("ntfy_topic")
-    server = (cfg.get("alerts") or {}).get("ntfy_server") or "https://ntfy.sh"
+    ntfy = (cfg.get("alerts") or {}).get("ntfy_server") or "https://ntfy.sh"
     print("", flush=True)
     print("  Market Structure Monitor", flush=True)
-    print(f"  Desktop:  http://127.0.0.1:{port}", flush=True)
-    print(f"  Phone:    http://{ip}:{port}   (same Wi-Fi)", flush=True)
-    print(f"  Push:     {server}/{topic}", flush=True)
-    print("            Install the free ntfy app and subscribe to that topic.", flush=True)
+    print(f"  Desktop:     {access['local']}", flush=True)
+    print(f"  Same Wi-Fi:  {access['lan']}", flush=True)
+    if access.get("tailscale"):
+        print(f"  Phone/away:  {access['tailscale']}   (Tailscale)", flush=True)
+        if access.get("tailscale_dns"):
+            print(f"               {access['tailscale_dns']}", flush=True)
+    elif access.get("tailscale_installed"):
+        print("  Phone/away:  Tailscale installed but not logged in. Run: tailscale login", flush=True)
+    else:
+        print("  Phone/away:  Tailscale not installed", flush=True)
+    print(f"  Push:        {ntfy}/{topic}", flush=True)
     print("  Ctrl+C to stop.", flush=True)
     print("", flush=True)
     try:
