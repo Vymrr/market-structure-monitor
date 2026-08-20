@@ -5,5 +5,6 @@ venv/
 data/state.json
 data/local.json
 data/*.pkl
+web/snapshot.json
 .DS_Store
 *.log

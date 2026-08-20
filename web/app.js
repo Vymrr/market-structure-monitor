@@ -71,18 +71,27 @@ function render(s) {
   $("breadth-line").textContent = `${inn.sectors_above_50 ?? "—"} / ${inn.sectors_total ?? 11}`;
   $("breadth-sub").textContent = `${(inn.breadth_bucket || "").replace("_", " ")} · sectors above 50 DMA`;
 
-  const server = (s.ntfy_server || "https://ntfy.sh").replace(/\/$/, "");
-  const topic = s.ntfy_topic || "—";
-  $("ntfy-topic").innerHTML = `<a href="${server}/${topic}" target="_blank" rel="noopener">${topic}</a>`;
-  const acc = s.access || {};
-  if (acc.tailscale) {
-    $("tailscale-line").innerHTML = `<a href="${acc.tailscale}">${acc.tailscale}</a>`;
-  } else if (acc.tailscale_installed && acc.tailscale_state && acc.tailscale_state !== "running") {
-    $("tailscale-line").textContent = `Tailscale: ${acc.tailscale_state} — log in on this PC`;
-  } else if (acc.tailscale_installed) {
-    $("tailscale-line").textContent = "Tailscale: installed, waiting for login";
+  const hosted = !!s.hosted;
+  $("scan-btn").hidden = hosted;
+  $("test-btn").hidden = hosted;
+  if (hosted) {
+    $("ntfy-topic").textContent = "ntfy alerts on (topic not published)";
+    $("tailscale-line").textContent = "Cloud dashboard · GitHub Pages · PC can be off";
+    $("updated").textContent = (s.ts ? `Updated ${s.ts_label}` : "") + " · refresh ~15 min in RTH";
   } else {
-    $("tailscale-line").textContent = "Tailscale: not installed on this PC";
+    const server = (s.ntfy_server || "https://ntfy.sh").replace(/\/$/, "");
+    const topic = s.ntfy_topic || "—";
+    $("ntfy-topic").innerHTML = `<a href="${server}/${topic}" target="_blank" rel="noopener">${topic}</a>`;
+    const acc = s.access || {};
+    if (acc.tailscale) {
+      $("tailscale-line").innerHTML = `<a href="${acc.tailscale}">${acc.tailscale}</a>`;
+    } else if (acc.tailscale_installed && acc.tailscale_state && acc.tailscale_state !== "running") {
+      $("tailscale-line").textContent = `Tailscale: ${acc.tailscale_state} — log in on this PC`;
+    } else if (acc.tailscale_installed) {
+      $("tailscale-line").textContent = "Tailscale: installed, waiting for login";
+    } else {
+      $("tailscale-line").textContent = "Tailscale: not installed on this PC";
+    }
   }
 
   $("indices").innerHTML = (s.indices || []).map(indexCard).join("") || "<p class='muted'>No index data.</p>";
@@ -134,9 +143,18 @@ function render(s) {
 }
 
 async function load() {
-  const res = await fetch("/api/snapshot", { cache: "no-store" });
-  if (!res.ok) throw new Error("snapshot failed");
-  render(await res.json());
+  const errors = [];
+  for (const url of ["/api/snapshot", "snapshot.json"]) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`${url} ${res.status}`);
+      render(await res.json());
+      return;
+    } catch (err) {
+      errors.push(err);
+    }
+  }
+  throw errors[errors.length - 1] || new Error("snapshot failed");
 }
 
 $("test-btn").addEventListener("click", async () => {

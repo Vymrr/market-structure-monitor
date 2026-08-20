@@ -11,10 +11,22 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-and-scan
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,3 +53,12 @@ jobs:
           else
             python -m msm scan
           fi
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload dashboard
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - name: Deploy dashboard
+        id: deploy
+        uses: actions/deploy-pages@v4

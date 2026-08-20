@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%230b0f14' width='32' height='32'/><path fill='%233dd68c' d='M4 24 L12 14 L18 18 L28 6 L28 24 Z'/></svg>" />
 </head>
 <body>
@@ -52,7 +52,7 @@
         <p class="k">Phone + desktop push</p>
         <p id="ntfy-topic" class="mono topic">—</p>
         <p id="tailscale-line" class="mono topic">Tailscale: —</p>
-        <p class="muted">Install <a href="https://ntfy.sh/" target="_blank" rel="noopener">ntfy</a> for pushes. On your phone, install <a href="https://tailscale.com/download" target="_blank" rel="noopener">Tailscale</a> (same account) to open this page off your home Wi-Fi.</p>
+        <p id="access-help" class="muted">Install <a href="https://ntfy.sh/" target="_blank" rel="noopener">ntfy</a> for pushes. Cloud page updates from GitHub Actions; this PC does not need to stay on.</p>
         <p><button id="test-btn" type="button">Send test push</button></p>
       </article>
     </section>
@@ -82,6 +82,6 @@
   <footer>
     Data via Yahoo Finance. Not trading advice. Structure is computed from daily swings, moving averages, VIX term structure, and sector breadth.
   </footer>
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

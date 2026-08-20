@@ -6,6 +6,7 @@ from typing import Any
 from .alerts import notify_all
 from .config import all_tickers, load_config
 from .data import fetch_market
+from .publish import write_public_snapshot
 from .state import load_state, save_state
 from .structure import Alert, analyze, now_et
 
@@ -72,6 +73,7 @@ def _run_scan_locked(
         }
     )
     save_state(state)
+    write_public_snapshot({**snapshot, "alert_history": history})
 
     snapshot["new_alerts"] = [a.to_dict() for a in (fresh if seeded else [])]
     snapshot["delivered"] = delivered

@@ -4,9 +4,9 @@ A free US-market structure detector. It watches the major indexes, sector breadt
 
 You can run it three ways:
 
-1. **Windows dashboard** — local web app on your PC, also openable from your phone on the same Wi-Fi
-2. **Phone/desktop push** — free [ntfy](https://ntfy.sh) notifications (Android, iOS, Windows)
-3. **Cloud** — GitHub Actions on a 15-minute weekday schedule, still free
+1. **Cloud dashboard** — [https://vymrr.github.io/market-structure-monitor/](https://vymrr.github.io/market-structure-monitor/) (GitHub Pages, PC can be off)
+2. **Phone push** — free [ntfy](https://ntfy.sh) from GitHub Actions
+3. **Windows dashboard** — `run.bat` on this PC if you want Scan now / Tailscale
 
 No paid data feed. Prices come from Yahoo Finance.
 
@@ -27,6 +27,12 @@ This is a monitoring tool, not trading advice.
 | **Opening-range break + VWAP** | Intraday structure during the cash session |
 
 The first scan **seeds a baseline and stays quiet**. After that you only get a ping when something flips, plus one daily briefing.
+
+## Cloud dashboard (no PC required)
+
+The live page is **https://vymrr.github.io/market-structure-monitor/**
+
+GitHub Actions refreshes it about every 15 minutes on weekday US hours and writes a public snapshot (the ntfy topic is not published). Anyone with the link can see the tape; that is the cost of a free host.
 
 ## Quick start (Windows)
 
