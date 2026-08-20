@@ -5,6 +5,11 @@ on:
     # Every 15 minutes, 13:30-21:00 UTC (~9:30-17:00 ET, DST-aware enough for a free cron)
     - cron: "*/15 13-20 * * 1-5"
   workflow_dispatch:
+    inputs:
+      briefing:
+        description: Send the full market-structure briefing to ntfy
+        type: boolean
+        default: false
 
 jobs:
   scan:
@@ -30,4 +35,9 @@ jobs:
           MSM_TELEGRAM_CHAT_ID: ${{ secrets.MSM_TELEGRAM_CHAT_ID }}
           MSM_DISCORD_WEBHOOK: ${{ secrets.MSM_DISCORD_WEBHOOK }}
           MSM_MIN_SEVERITY: ${{ secrets.MSM_MIN_SEVERITY }}
-        run: python -m msm scan
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.briefing }}" = "true" ]; then
+            python -m msm scan --briefing
+          else
+            python -m msm scan
+          fi
