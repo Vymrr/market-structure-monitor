@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+const SEEN_KEY = "msm-last-alert-ts";
+let usingLocalApi = false;
 
 function cls(v) {
   return String(v || "")
@@ -74,6 +76,9 @@ function render(s) {
   const hosted = !!s.hosted;
   $("scan-btn").hidden = hosted;
   $("test-btn").hidden = hosted;
+  $("notify-btn").hidden = !hosted;
+  if (hosted) syncNotifyButton();
+  notifyNewAlerts(s);
   if (hosted) {
     $("ntfy-topic").textContent = "ntfy alerts on (topic not published)";
     $("tailscale-line").textContent = "Cloud dashboard · GitHub Pages · PC can be off";
@@ -142,12 +147,59 @@ function render(s) {
     : "<p class='muted'>No structure changes yet. The first scan seeds a baseline; later flips show up here and on your phone.</p>";
 }
 
+function newestAlertTs(s) {
+  const hist = s.alert_history || [];
+  let max = "";
+  for (const a of hist) {
+    if (a && a.ts && a.ts > max) max = a.ts;
+  }
+  return max;
+}
+
+function notifyNewAlerts(s) {
+  if (usingLocalApi) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    const ts = newestAlertTs(s);
+    if (ts && !localStorage.getItem(SEEN_KEY)) localStorage.setItem(SEEN_KEY, ts);
+    return;
+  }
+  const prev = localStorage.getItem(SEEN_KEY) || "";
+  const hist = (s.alert_history || []).filter((a) => a && a.ts && a.ts > prev);
+  const ts = newestAlertTs(s);
+  if (ts) localStorage.setItem(SEEN_KEY, ts);
+  if (!prev) return;
+  for (const a of hist.slice(-4)) {
+    try {
+      new Notification(a.title || "Market structure", {
+        body: a.body || "",
+        silent: true,
+        tag: a.id || a.ts,
+      });
+    } catch (err) {
+      /* ignore */
+    }
+  }
+}
+
+function syncNotifyButton() {
+  const btn = $("notify-btn");
+  if (!btn || btn.hidden) return;
+  if (!("Notification" in window)) {
+    btn.hidden = true;
+    return;
+  }
+  if (Notification.permission === "granted") btn.textContent = "Desktop alerts on";
+  else if (Notification.permission === "denied") btn.textContent = "Alerts blocked in browser";
+  else btn.textContent = "Enable desktop alerts";
+}
+
 async function load() {
   const errors = [];
   for (const url of ["/api/snapshot", "snapshot.json"]) {
     try {
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`${url} ${res.status}`);
+      usingLocalApi = url === "/api/snapshot";
       render(await res.json());
       return;
     } catch (err) {
@@ -156,6 +208,26 @@ async function load() {
   }
   throw errors[errors.length - 1] || new Error("snapshot failed");
 }
+
+$("notify-btn").addEventListener("click", async () => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "granted") {
+    new Notification("Market structure alerts on", {
+      body: "Quiet Windows banners when structure flips. Keep this tab open.",
+      silent: true,
+    });
+    syncNotifyButton();
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  syncNotifyButton();
+  if (perm === "granted") {
+    new Notification("Market structure alerts on", {
+      body: "Quiet Windows banners when structure flips. Keep this tab open.",
+      silent: true,
+    });
+  }
+});
 
 $("test-btn").addEventListener("click", async () => {
   $("test-btn").disabled = true;

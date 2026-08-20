@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import shutil
 import socket
@@ -153,6 +154,17 @@ def attach_access(snap: dict, cfg: dict | None = None) -> dict:
     return view
 
 
+def desktop_alert_cfg(cfg: dict) -> dict:
+    """Local dashboard: silent Windows toasts only. GitHub Actions owns ntfy."""
+    out = copy.deepcopy(cfg)
+    alerts = out.setdefault("alerts", {})
+    alerts["ntfy"] = False
+    alerts["telegram_bot_token"] = ""
+    alerts["discord_webhook"] = ""
+    alerts["windows_toast"] = True
+    return out
+
+
 def _loop(cfg: dict, stop: threading.Event) -> None:
     while not stop.is_set():
         try:
@@ -169,18 +181,19 @@ def serve(host: str | None = None, port: int | None = None) -> None:
     port = int(port or cfg.get("port") or 8765)
     WEB_DIR.mkdir(parents=True, exist_ok=True)
 
+    desktop_cfg = desktop_alert_cfg(cfg)
     print("Seeding market structure snapshot…", flush=True)
     try:
-        snap = run_scan(cfg=cfg)
+        snap = run_scan(cfg=desktop_cfg)
         print(f"Seeded at {snap.get('ts_label')}", flush=True)
     except Exception as exc:
         print(f"Initial scan failed: {exc}", flush=True)
 
     stop = threading.Event()
-    worker = threading.Thread(target=_loop, args=(cfg, stop), daemon=True)
+    worker = threading.Thread(target=_loop, args=(desktop_cfg, stop), daemon=True)
     worker.start()
 
-    httpd = ThreadingHTTPServer((host, port), partial(Handler, cfg=cfg))
+    httpd = ThreadingHTTPServer((host, port), partial(Handler, cfg=desktop_cfg))
     access = access_urls(cfg)
     topic = (cfg.get("alerts") or {}).get("ntfy_topic")
     ntfy = (cfg.get("alerts") or {}).get("ntfy_server") or "https://ntfy.sh"
@@ -196,7 +209,8 @@ def serve(host: str | None = None, port: int | None = None) -> None:
         print("  Phone/away:  Tailscale installed but not logged in. Run: tailscale login", flush=True)
     else:
         print("  Phone/away:  Tailscale not installed", flush=True)
-    print(f"  Push:        {ntfy}/{topic}", flush=True)
+    print(f"  Phone push:  GitHub Actions → {ntfy}/{topic}", flush=True)
+    print("  Desktop:     silent Windows toast on structure changes (this window)", flush=True)
     print("  Ctrl+C to stop.", flush=True)
     print("", flush=True)
     try:

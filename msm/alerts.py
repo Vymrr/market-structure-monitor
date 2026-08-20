@@ -94,10 +94,13 @@ def _windows_toast(title: str, body: str) -> None:
         )
 
     xml = (
-        "<toast><visual><binding template='ToastGeneric'>"
+        '<toast duration="short">'
+        "<visual><binding template='ToastGeneric'>"
         f"<text>{esc(title)[:80]}</text>"
-        f"<text>{esc(body)[:180]}</text>"
-        "</binding></visual></toast>"
+        f"<text>{esc(body)[:140]}</text>"
+        "</binding></visual>"
+        '<audio silent="true"/>'
+        "</toast>"
     )
     script = f"""
 $ErrorActionPreference = 'Stop'
@@ -108,38 +111,18 @@ $doc.LoadXml(@'
 {xml}
 '@)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Market Structure Monitor').Show($toast)
-"""
-    try:
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            timeout=8,
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            _balloon_fallback(title, body)
-    except Exception:
-        _balloon_fallback(title, body)
-
-
-def _balloon_fallback(title: str, body: str) -> None:
-    title = title.replace("'", "''")[:60]
-    body = body.replace("'", "''")[:140]
-    script = f"""
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-$n = New-Object System.Windows.Forms.NotifyIcon
-$n.Icon = [System.Drawing.SystemIcons]::Information
-$n.Visible = $true
-$n.ShowBalloonTip(8000, '{title}', '{body}', [System.Windows.Forms.ToolTipIcon]::Info)
-Start-Sleep -Seconds 1
-$n.Dispose()
+foreach ($appId in @('Market Structure Monitor', '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe')) {{
+  try {{
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+    exit 0
+  }} catch {{}}
+}}
+exit 1
 """
     try:
         subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            timeout=12,
+            timeout=8,
             capture_output=True,
             text=True,
         )
