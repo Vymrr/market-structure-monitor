@@ -32,7 +32,7 @@ The first scan **seeds a baseline and stays quiet**. After that you only get a p
 
 The live page is **https://vymrr.github.io/market-structure-monitor/**
 
-GitHub Actions refreshes it about every 15 minutes on weekday US hours and writes a public snapshot (the ntfy topic is not published). Anyone with the link can see the tape; that is the cost of a free host.
+GitHub Actions is asked to refresh it every 5 minutes on weekday US hours. GitHub’s own scheduler is **best-effort** (often 20–60 minutes, sometimes longer). Use **Refresh** to reload the latest snapshot, or **New scan** → **Run workflow** for an on-demand update. The ntfy topic is not published. Anyone with the link can see the tape; that is the cost of a free host.
 
 ## Quick start (Windows)
 
@@ -90,7 +90,7 @@ Edit `config.json` or set environment variables:
 1. Create a GitHub repo and push this folder.
 2. Settings → Secrets and variables → Actions, add `MSM_NTFY_TOPIC` (use the same topic you subscribed to).
 3. Optional secrets: `MSM_TELEGRAM_BOT_TOKEN`, `MSM_TELEGRAM_CHAT_ID`, `MSM_DISCORD_WEBHOOK`.
-4. The workflow `.github/workflows/scan.yml` runs every 15 minutes on weekday US hours. You can also hit **Run workflow**.
+4. The workflow `.github/workflows/scan.yml` is scheduled every 5 minutes on weekday US hours, but GitHub may delay it. You can also hit **Run workflow**.
 
 GitHub’s cache holds the last snapshot so the cloud job still alerts on *changes*, not every tick.
 

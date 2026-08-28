@@ -2,8 +2,9 @@ name: Market structure scan
 
 on:
   schedule:
-    # Every 15 minutes, 13:30-21:00 UTC (~9:30-17:00 ET, DST-aware enough for a free cron)
-    - cron: "*/15 13-20 * * 1-5"
+    # Requested every 5 minutes on weekday US hours. GitHub's scheduler is
+    # best-effort and often lags 20–60 minutes; this denser cron recovers better.
+    - cron: "*/5 13-20 * * 1-5"
   workflow_dispatch:
     inputs:
       briefing:
@@ -18,7 +19,7 @@ permissions:
 
 concurrency:
   group: pages-and-scan
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   scan:

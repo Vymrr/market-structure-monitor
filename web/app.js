@@ -84,7 +84,7 @@ function render(s) {
   if (hosted) {
     $("ntfy-topic").textContent = "ntfy alerts on (topic not published)";
     $("tailscale-line").textContent = "Cloud dashboard · GitHub Pages · PC can be off";
-    $("updated").textContent = snapshotAge(s) + " · not live ticks · GitHub ~15 min";
+    $("updated").textContent = snapshotAge(s) + " · not live ticks · GitHub schedule is best-effort";
   } else {
     const server = (s.ntfy_server || "https://ntfy.sh").replace(/\/$/, "");
     const topic = s.ntfy_topic || "—";
